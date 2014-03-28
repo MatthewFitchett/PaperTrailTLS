@@ -34,7 +34,7 @@ namespace PaperTrailTLS
             // Create a TCP/IP client socket. 
             // machineName is the host running the server application.
             var client = new TcpClient(machineName, port);
-            Console.WriteLine("Client connected.");
+            Console.WriteLine("Client connected to {0} on port {1}.",machineName, port);
 
             // Create an SSL stream that will close the client's stream.
             var sslStream = new SslStream(
@@ -74,7 +74,6 @@ namespace PaperTrailTLS
             client.Close();
             
             Console.WriteLine("Client closed.");
-            Console.ReadKey();
         }
 
 
