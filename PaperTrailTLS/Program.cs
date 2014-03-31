@@ -1,21 +1,27 @@
 ﻿using System;
+using System.Configuration;
 using System.Net;
 using System.Net.Sockets;
+using System.Reflection;
 using System.Text;
+using log4net;
+using log4net.Config;
 
 namespace PaperTrailTLS
 {
     class Program
     {
+        private static readonly ILog Log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
         private const string MachineName = "logs.papertrailapp.com";
-        private const string PaperTrailIp = "67.214.212.101";
-        private const int Port = 24919;
+        private static string PaperTrailIp = ConfigurationManager.AppSettings["PaperTrailIp"].ToString();
+        private static int Port = Int32.Parse(ConfigurationManager.AppSettings["PaperTrailPort"]);
 
         private const string TCPMessageToSend = "Heres a TCP message for ya!";
         private const string UDPMessageToSend = "LOL UDP! HAHAH UDP. Seems legit.";
 
         public static int Main(string[] args)
         {
+            XmlConfigurator.Configure();
             RunMenu();
             return 0;
         }
@@ -33,6 +39,7 @@ namespace PaperTrailTLS
             Console.WriteLine("* 1) Send TLS message       *");
             Console.WriteLine("* 2) Send Clear UDP message *");
             Console.WriteLine("* 3) Send Clear TCP message *");
+            Console.WriteLine("* 4) Send via Log4net       *");
             Console.WriteLine("*                           *");
             Console.WriteLine("*****************************");
 
@@ -68,6 +75,15 @@ namespace PaperTrailTLS
                         Console.ReadKey();
                         RunMenu();
                         break;
+                    case '4':
+                        Console.WriteLine();
+                        Console.WriteLine("-----------------------------");
+                        SendLog4NetAppenderMessage();
+                        Console.WriteLine("Done. Press a key.");
+                        Console.WriteLine("-----------------------------");
+                        Console.ReadKey();
+                        RunMenu();
+                        break;
                     default:
                         RunMenu();
                         break;
@@ -82,6 +98,17 @@ namespace PaperTrailTLS
                 Console.ReadKey();
                 RunMenu();
             }
+        }
+
+        private static void SendLog4NetAppenderMessage()
+        {
+            Log.Debug("Here's a debug message!");
+            Log.Info("Here's an info message!");
+            Log.Warn("Here's a warn message!");
+            Log.Error("Here's a error message!");
+            Log.Fatal("Here's a fatal message");
+
+            Log.Fatal("Fatal with exception", new Exception("Oh dear! An Exception!"));
         }
 
         private static void SendPlainUDPMessage()
