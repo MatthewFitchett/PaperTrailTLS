@@ -13,7 +13,7 @@ namespace PaperTrailTLS
     {
         private static readonly ILog Log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
         private const string MachineName = "logs.papertrailapp.com";
-        private static string PaperTrailIp = ConfigurationManager.AppSettings["PaperTrailIp"].ToString();
+        private static string PaperTrailIp =ConfigurationManager.AppSettings["PaperTrailIp"];
         private static int Port = Int32.Parse(ConfigurationManager.AppSettings["PaperTrailPort"]);
 
         private const string TCPMessageToSend = "Heres a TCP message for ya!";

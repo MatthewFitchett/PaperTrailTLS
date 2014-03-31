@@ -15,6 +15,9 @@ namespace PaperTrailTLS
         public int DestinationPort { get; set; }
         public string DestinationHostName { get; set; }
 
+        private SslStream sslStream = null;
+        private TcpClient client = null;
+
         // The following method is invoked by the RemoteCertificateValidationDelegate in the Append() method. 
         public static bool ValidateServerCertificate(
             object sender,
@@ -33,43 +36,64 @@ namespace PaperTrailTLS
 
         protected override void Append(LoggingEvent loggingEvent)
         {
-            // Create a TCP/IP client socket. 
-            var client = new TcpClient(DestinationHostName, DestinationPort);
-
-            // Create an SSL stream that will close the client's stream.
-            var sslStream = new SslStream(
-                client.GetStream(),
-                false,
-                ValidateServerCertificate,
-                null);
-
-            // The server name must match the name on the server certificate. 
-            try
-            {
-                sslStream.AuthenticateAsClient(DestinationHostName);
-            }
-            catch (AuthenticationException e)
-            {
-                Console.WriteLine("Exception: {0}", e.Message);
-                if (e.InnerException != null)
-                {
-                    Console.WriteLine("Inner exception: {0}", e.InnerException.Message);
-                }
-                Console.WriteLine("Authentication failed - closing the connection.");
-                client.Close();
-                return;
-            }
-
             // Encode a test message into a byte array. 
             var msg = RenderLoggingEvent(loggingEvent);
-            byte[] messsage = Encoding.UTF8.GetBytes(msg);
+            byte[] message = Encoding.UTF8.GetBytes(msg);
 
             // Send message to the server. 
-            sslStream.Write(messsage);
-
+            sslStream.Write(message);
             sslStream.Flush();
-            sslStream.Close();
-            client.Close();
+        }
+        
+        private static object syncRoot = new object();
+        protected override bool PreAppendCheck()
+        {
+            // May need dbl check locking here..
+            if (sslStream == null || client == null)
+            {
+                lock (syncRoot)
+                {
+                    if (sslStream == null || client == null)
+                    {
+                        client = new TcpClient(DestinationHostName, DestinationPort);
+
+                        // Create an SSL stream that will close the client's stream.
+                        sslStream = new SslStream(
+                            client.GetStream(),
+                            false,
+                            ValidateServerCertificate,
+                            null);
+
+                        // The server name must match the name on the server certificate. 
+                        try
+                        {
+                            sslStream.AuthenticateAsClient(DestinationHostName);
+                        }
+                        catch (AuthenticationException e)
+                        {
+                            Console.WriteLine("Exception: {0}", e.Message);
+                            if (e.InnerException != null)
+                            {
+                                Console.WriteLine("Inner exception: {0}", e.InnerException.Message);
+                            }
+                            Console.WriteLine("Authentication failed - closing the connection.");
+                            client.Close();
+                        }
+                    }
+                }
+            }
+            return base.PreAppendCheck();
+        }
+
+        protected override void OnClose()
+        {
+
+            if (sslStream != null)
+                sslStream.Close();
+            if (client != null)
+                client.Close();
+
+            base.OnClose();
         }
     }
 }
